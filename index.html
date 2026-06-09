@@ -1008,15 +1008,23 @@
     form.addEventListener('submit', function(e) {
       e.preventDefault();
 
+      // Hide previous alerts
+      alertSuccess.style.display = 'none';
+      alertError.style.display = 'none';
+
       // Validation
       var required = form.querySelectorAll('[required]');
       var valid = true;
+      var firstInvalid = null;
       required.forEach(function(field) {
         if (!field.value.trim()) {
           field.style.borderColor = '#ef4444';
+          field.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.2)';
+          if (!firstInvalid) firstInvalid = field;
           valid = false;
         } else {
           field.style.borderColor = '';
+          field.style.boxShadow = '';
         }
       });
 
@@ -1024,12 +1032,22 @@
       var checked = form.querySelectorAll('input[name="products"]:checked');
       if (checked.length === 0) {
         document.getElementById('productCheckboxes').style.outline = '2px solid #ef4444';
+        if (!firstInvalid) firstInvalid = document.getElementById('productCheckboxes');
         valid = false;
       } else {
         document.getElementById('productCheckboxes').style.outline = '';
       }
 
-      if (!valid) return;
+      if (!valid) {
+        // Show error banner and scroll to first invalid field
+        alertError.innerHTML = '&#9888; Please fill in all required fields (marked with *).';
+        alertError.style.display = 'block';
+        if (firstInvalid) {
+          firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          firstInvalid.focus();
+        }
+        return;
+      }
 
       // Collect data
       var products = [];
@@ -1053,7 +1071,7 @@
       btnSubmit.disabled = true;
       btnSubmit.textContent = 'Submitting...';
 
-      var url = APPS_SCRIPT_URL + '?' + new URLSearchParams(data).toString();
+        var url = APPS_SCRIPT_URL + '?' + new URLSearchParams(data).toString();
       fetch(url, { method: 'GET', mode: 'no-cors' })
         .then(function() {
           alertSuccess.style.display = 'block';
@@ -1064,6 +1082,7 @@
           window.scrollTo({ top: document.getElementById('meeting').offsetTop, behavior: 'smooth' });
         })
         .catch(function() {
+          alertError.innerHTML = '&#9888; Submission failed. Please email us at <a href="mailto:sales@kms-p.com">sales@kms-p.com</a>';
           alertError.style.display = 'block';
           alertSuccess.style.display = 'none';
           btnSubmit.disabled = false;
